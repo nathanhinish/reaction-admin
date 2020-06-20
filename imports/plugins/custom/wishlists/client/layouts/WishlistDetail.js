@@ -8,7 +8,7 @@ import {
   Divider
 } from "@material-ui/core";
 import { Switch, Route } from "react-router-dom";
-// import WishlistToolbar from "../components/WishlistToolbar";
+import WishlistToolbar from "../components/WishlistToolbar";
 import ContentViewPrimaryDetailLayout from "/imports/client/ui/layouts/ContentViewPrimaryDetailLayout";
 
 const styles = (theme) => ({
@@ -40,7 +40,7 @@ function WishlistDetail(props) {
 
   return (
     <ContentViewPrimaryDetailLayout
-      AppBarComponent={/* <WishlistToolbar /> */ <div />}
+      AppBarComponent={<WishlistToolbar />}
       PrimaryComponent={
         <React.Fragment>
           <Box
