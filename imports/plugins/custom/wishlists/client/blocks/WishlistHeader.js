@@ -54,8 +54,8 @@ function WishlistHeader({ shouldDisplayStatus }) {
     return null;
   }
 
-  const hasCloneWishlistPermission = Reaction.hasPermission(["reaction:legacy:wishlists/clone"], Reaction.getUserId(), Reaction.getShopId());
-  const hasArchiveWishlistPermission = Reaction.hasPermission(["reaction:legacy:wishlists/archive"], Reaction.getUserId(), Reaction.getShopId());
+  const hasCloneWishlistPermission = Reaction.hasPermission(["givelist:wishlists/clone"], Reaction.getUserId(), Reaction.getShopId());
+  const hasArchiveWishlistPermission = Reaction.hasPermission(["givelist:wishlists/archive"], Reaction.getUserId(), Reaction.getShopId());
 
   // Archive menu item
   let archiveMenuItem = (
@@ -82,7 +82,7 @@ function WishlistHeader({ shouldDisplayStatus }) {
     </ConfirmDialog>
   );
 
-  if (wishlist.isDeleted) {
+  if (wishlist.isArchived) {
     archiveMenuItem = (
       <ConfirmDialog
         title={i18next.t("admin.wishlistTable.bulkActions.restoreTitle")}
@@ -112,15 +112,15 @@ function WishlistHeader({ shouldDisplayStatus }) {
         >
           <Link className={classes.breadcrumbLink} to={`/wishlists/${wishlist._id}`}>
             <Typography variant="h2">
-              <Helmet title={wishlist.title} />
-              {wishlist.title || "Untitled Wishlist"}
+              <Helmet title={wishlist.name} />
+              {wishlist.name || "Untitled Wishlist"}
             </Typography>
           </Link>
           {shouldDisplayStatus &&
             <Box>
               <Typography variant="caption">
                 {wishlist.isVisible ? "Visible" : "Hidden"}
-                {wishlist.isDeleted ? i18next.t("app.archived") : null}
+                {wishlist.isArchived ? i18next.t("app.archived") : null}
               </Typography>
             </Box>
           }

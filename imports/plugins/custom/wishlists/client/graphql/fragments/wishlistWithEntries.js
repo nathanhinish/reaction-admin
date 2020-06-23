@@ -2,10 +2,16 @@ import gql from "graphql-tag";
 import WishlistEntry from "./wishlistEntry";
 
 export default gql`
-  fragment Product on Product {
+  fragment Wishlist on Wishlist {
     _id
+    isArchived
     name
-    isDeleted
+    permalink
+    description
+    isVisible
+    createdAt
+    updatedAt
+    isArchived
     entries {
       ...WishlistEntry
     }

@@ -1,3 +1,5 @@
+import { registerBlock } from "../../../../core/components/lib";
+import WishlistDetailForm from './WishlistDetailForm';
 import WishlistHeader from './WishlistHeader';
 
 registerBlock({
@@ -7,38 +9,8 @@ registerBlock({
   priority: 10
 });
 
-// registerBlock({
-//   region: "ProductDetailMain",
-//   name: "ProductDetailForm",
-//   component: ProductDetailForm,
-//   priority: 20
-// });
-
-// // Media gallery card and form
-// registerBlock({
-//   region: "ProductDetailMain",
-//   name: "ProductMediaForm",
-//   component: ProductMediaForm,
-//   priority: 30
-// });
-
-// registerBlock({
-//   region: "ProductDetailMain",
-//   name: "ProductSocialForm",
-//   component: ProductSocialForm,
-//   priority: 40
-// });
-
-// registerBlock({
-//   region: "ProductDetailMain",
-//   name: "ProductTagForm",
-//   component: ProductTagForm,
-//   priority: 50
-// });
-
-// registerBlock({
-//   region: "ProductDetailMain",
-//   name: "ProductMetadataForm",
-//   component: ProductMetadataForm,
-//   priority: 60
-// });
+registerBlock({
+  name: "GeneralForm",
+  region: "WishlistDetailMain",
+  component: WishlistDetailForm,
+});

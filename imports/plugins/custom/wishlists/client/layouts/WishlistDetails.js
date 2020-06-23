@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, Container, Grid } from "@material-ui/core";
+import { Box, Container, Divider } from "@material-ui/core";
 import withStyles from "@material-ui/core/styles/withStyles";
 import { Blocks } from "@reactioncommerce/reaction-components";
 import PropTypes from "prop-types";
 import React from "react";
 import { Route, Switch } from "react-router-dom";
 import WishlistToolbar from "../components/WishlistToolbar";
-import ContentViewExtraWideLayout from "/imports/client/ui/layouts/ContentViewExtraWideLayout";
+import ContentViewPrimaryDetailLayout from "/imports/client/ui/layouts/ContentViewPrimaryDetailLayout";
 
 const styles = (theme) => ({
   block: {
@@ -41,28 +41,39 @@ function WishlistDetail(props) {
   const { classes, ...blockProps } = props;
 
   return (
-    <ContentViewExtraWideLayout>
-      <WishlistToolbar />
-      <Container>
-        <Switch>
-          <Route
-            path="/wishlists/:handle/:variantId/:optionId?"
-            render={() => (
-              <Blocks region="VariantDetailMain" blockProps={blockProps}>
-                {(blocks) =>
-                  blocks.map((block, index) => (
-                    <div className={classes.block} key={index}>
-                      {block}
-                    </div>
-                  ))
-                }
-              </Blocks>
-            )}
-          />
-          <Route
-            path="/wishlists/:handle/"
-            render={() => (
-              <Container>
+    <ContentViewPrimaryDetailLayout
+      AppBarComponent={<WishlistToolbar />}
+      PrimaryComponent={
+        <React.Fragment>
+          <Box paddingY={4} paddingLeft={4} paddingRight={2}>
+            <Blocks region="WishlistDetailHeader" blockProps={blockProps} />
+          </Box>
+          <Divider />
+          <Box paddingY={2}>
+            <Blocks region="WishlistDetailSidebar" blockProps={blockProps} />
+          </Box>
+        </React.Fragment>
+      }
+      DetailComponent={
+        <Container maxWidth="md">
+          <Switch>
+            <Route
+              path="/wishlists/:handle/:variantId/:optionId?"
+              render={() => (
+                <Blocks region="VariantDetailMain" blockProps={blockProps}>
+                  {(blocks) =>
+                    blocks.map((block, index) => (
+                      <div className={classes.block} key={index}>
+                        {block}
+                      </div>
+                    ))
+                  }
+                </Blocks>
+              )}
+            />
+            <Route
+              path="/wishlists/:handle/"
+              render={() => (
                 <Blocks region="WishlistDetailMain" blockProps={blockProps}>
                   {(blocks) =>
                     blocks.map((block, index) => (
@@ -72,12 +83,12 @@ function WishlistDetail(props) {
                     ))
                   }
                 </Blocks>
-              </Container>
-            )}
-          />
-        </Switch>
-      </Container>
-    </ContentViewExtraWideLayout>
+              )}
+            />
+          </Switch>
+        </Container>
+      }
+    />
   );
 }
 

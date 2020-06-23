@@ -7,364 +7,279 @@ import useCurrentShopId from "/imports/client/ui/hooks/useCurrentShopId";
 import { useSnackbar } from "notistack";
 
 // GraphQL Queries / Mutations
-import ArchiveProductsMutation from "../graphql/mutations/archiveProducts";
-import ArchiveProductVariantsMutation from "../graphql/mutations/archiveProductVariants";
-import CloneProductsMutation from "../graphql/mutations/cloneProducts";
-import CloneProductVariantsMutation from "../graphql/mutations/cloneProductVariants";
-import CreateProductVariantMutation from "../graphql/mutations/createProductVariant";
-import ProductQuery from "../graphql/queries/product";
-import PublishProductsToCatalogMutation from "../graphql/mutations/publishProductsToCatalog";
-import UpdateProductMutation from "../graphql/mutations/updateProduct";
-import UpdateProductVariantMutation from "../graphql/mutations/updateProductVariant";
-import UpdateProductVariantPricesMutation from "../graphql/mutations/updateProductVariantPrices";
+import ArchiveWishlistsMutation from "../graphql/mutations/archiveWishlists";
+import ArchiveWishlistEntriesMutation from "../graphql/mutations/archiveWishlistEntries";
+import CloneWishlistsMutation from "../graphql/mutations/cloneWishlists";
+import CreateWishlistEntryMutation from "../graphql/mutations/createWishlistEntry";
+import WishlistQuery from "../graphql/queries/wishlist";
+import UpdateWishlistMutation from "../graphql/mutations/updateWishlist";
+import UpdateWishlistEntryMutation from "../graphql/mutations/updateWishlistEntry";
 
 /**
- * Restore an archived product
- * @param {Object} product Product object
+ * Restore an archived wishlist
+ * @param {Object} wishlist Wishlist object
  * @returns {undefined} No return
  */
-export function handleProductRestore(product) {
-  Meteor.call("products/updateProductField", product._id, "isDeleted", false);
+export function handleWishlistRestore(wishlist) {
+  Meteor.call("wishlists/updateWishlistField", wishlist._id, "isArchived", false);
 }
 
 /**
- * @method useProduct
- * @summary useProduct hook
+ * @method useWishlist
+ * @summary useWishlist hook
  * @param {Object} args input arguments
- * @param {String} args.productId Product Id to load product data for
- * @param {String} args.variantId Variant Id to load product data for
- * @param {String} args.optionId Option Id to load product data for
- * @returns {Object} Result containing the product and other helpers for managing that product
+ * @param {String} args.wishlistId Wishlist Id to load wishlist data for
+ * @param {String} args.entryId Entry Id to load wishlist data for
+ * @param {String} args.optionId Option Id to load wishlist data for
+ * @returns {Object} Result containing the wishlist and other helpers for managing that wishlist
  */
-function useProduct(args = {}) {
+function useWishlist(args = {}) {
   const { enqueueSnackbar } = useSnackbar();
 
   const {
-    productId: productIdProp,
-    variantId: variantIdProp,
+    wishlistId: wishlistIdProp,
+    entryId: entryIdProp,
     optionId: optionIdProp
   } = args;
   const [newMetaField, setNewMetaField] = useState({ key: "", value: "" });
   const history = useHistory();
   const routeParams = useParams();
-  const [updateProduct] = useMutation(UpdateProductMutation);
-  const [archiveProducts] = useMutation(ArchiveProductsMutation);
-  const [cloneProducts] = useMutation(CloneProductsMutation);
-  const [createProductVariant] = useMutation(CreateProductVariantMutation);
-  const [updateProductVariant] = useMutation(UpdateProductVariantMutation);
-  const [cloneProductVariants] = useMutation(CloneProductVariantsMutation);
-  const [archiveProductVariants] = useMutation(ArchiveProductVariantsMutation);
-  const [publishProductsToCatalog] = useMutation(PublishProductsToCatalogMutation);
-  const [updateProductVariantPrices] = useMutation(UpdateProductVariantPricesMutation);
+  const [updateWishlist] = useMutation(UpdateWishlistMutation);
+  const [archiveWishlists] = useMutation(ArchiveWishlistsMutation);
+  const [cloneWishlists] = useMutation(CloneWishlistsMutation);
+  const [createWishlistEntry] = useMutation(CreateWishlistEntryMutation);
+  const [updateWishlistEntry] = useMutation(UpdateWishlistEntryMutation);
+  const [archiveWishlistEntries] = useMutation(ArchiveWishlistEntriesMutation);
+
 
   const [currentShopId] = useCurrentShopId();
 
-  const productId = routeParams.handle || productIdProp;
-  const variantId = routeParams.variantId || variantIdProp;
+  const wishlistId = routeParams.handle || wishlistIdProp;
+  const entryId = routeParams.entryId || entryIdProp;
   const optionId = routeParams.optionId || optionIdProp;
   const shopId = routeParams.shopId || currentShopId;
 
-  const { data: productQueryResult, isLoading, refetch: refetchProduct } = useQuery(ProductQuery, {
+  const { data: wishlistQueryResult, isLoading, refetch: refetchWishlist } = useQuery(WishlistQuery, {
     variables: {
-      productId,
-      shopId
+      wishlistId
     },
     skip: !shopId
   });
 
-  const { product } = productQueryResult || {};
+  const { wishlist } = wishlistQueryResult || {};
 
-  let variant;
+  let entry;
   let option;
 
-  if (product && variantId) {
-    variant = product.variants.find(({ _id }) => _id === variantId);
+  if (wishlist && entryId) {
+    entry = wishlist.entries.find(({ _id }) => _id === entryId);
   }
 
-  if (product && variantId && optionId) {
-    option = variant.options.find(({ _id }) => _id === optionId);
+  if (wishlist && entryId && optionId) {
+    option = entry.options.find(({ _id }) => _id === optionId);
   }
 
-  const onPublishProduct = useCallback(async ({ productId: productIdLocal = product._id }) => {
+  const onArchiveWishlist = useCallback(async (wishlistLocal, redirectUrl) => {
     try {
-      await publishProductsToCatalog({
-        variables: {
-          productIds: [productIdLocal]
-        }
-      });
-
-      // Refetch on success to force a cache update
-      refetchProduct();
-
-      enqueueSnackbar(i18next.t("admin.catalogProductPublishSuccess"), { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(error.message, { variant: "error" });
-    }
-  }, [product, publishProductsToCatalog, refetchProduct, enqueueSnackbar]);
-
-  const onArchiveProduct = useCallback(async (productLocal, redirectUrl) => {
-    try {
-      await archiveProducts({ variables: { input: { shopId, productIds: [productLocal] } } });
-      enqueueSnackbar(i18next.t("productDetailEdit.archiveProductsSuccess"), { variant: "success" });
+      await archiveWishlists({ variables: { input: { wishlistIds: [wishlistLocal] } } });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.archiveWishlistsSuccess"), { variant: "success" });
       history.push(redirectUrl);
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.archiveProductsFail"), { variant: "success" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.archiveWishlistsFail"), { variant: "success" });
     }
   }, [
     enqueueSnackbar,
     history,
-    archiveProducts,
-    shopId
+    archiveWishlists
   ]);
 
-
-  const onCloneProduct = useCallback(async (productLocal) => {
+  const onCloneWishlist = useCallback(async (wishlistLocal) => {
     try {
-      await cloneProducts({ variables: { input: { shopId, productIds: [productLocal] } } });
-      enqueueSnackbar(i18next.t("productDetailEdit.cloneProductSuccess"), { variant: "success" });
+      await cloneWishlists({ variables: { input: { shopId, wishlistIds: [wishlistLocal] } } });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.cloneWishlistSuccess"), { entry: "success" });
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.cloneProductFail"), { variant: "error" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.cloneWishlistFail"), { entry: "error" });
     }
-  }, [cloneProducts, enqueueSnackbar, shopId]);
+  }, [cloneWishlists, enqueueSnackbar, shopId]);
 
-  const onCreateVariant = useCallback(async ({
-    parentId: parentIdLocal = product._id,
+  const onCreateEntry = useCallback(async ({
+    parentId: parentIdLocal = wishlist._id,
     shopId: shopIdLocal = shopId,
     redirectOnCreate = false
   }) => {
     try {
-      const { data } = await createProductVariant({
+      const { data } = await createWishlistEntry({
         variables: {
           input: {
-            productId: parentIdLocal,
+            wishlistId: parentIdLocal,
             shopId: shopIdLocal
           }
         }
       });
 
-      // Optionally redirect to the new variant or option on create
+      // Optionally redirect to the new entry or option on create
       if (redirectOnCreate) {
-        if (data && parentIdLocal === product._id) {
-          const newVariantId = data.createProductVariant && data.createProductVariant.variant && data.createProductVariant.variant._id;
-          history.push(`/products/${product._id}/${newVariantId}`);
+        if (data && parentIdLocal === wishlist._id) {
+          const newEntryId = data.createWishlistEntry && data.createWishlistEntry.entry && data.createWishlistEntry.entry._id;
+          history.push(`/wishlists/${wishlist._id}/${newEntryId}`);
         } else {
-          const newOptionId = data.createProductVariant && data.createProductVariant.variant && data.createProductVariant.variant._id;
-          history.push(`/products/${product._id}/${parentIdLocal}/${newOptionId}`);
+          const newOptionId = data.createWishlistEntry && data.createWishlistEntry.entry && data.createWishlistEntry.entry._id;
+          history.push(`/wishlists/${wishlist._id}/${parentIdLocal}/${newOptionId}`);
         }
       }
 
-      // Refetch product data when we adda new variant
-      refetchProduct();
+      // Refetch wishlist data when we adda new entry
+      refetchWishlist();
 
-      // Because of the way GraphQL and meteor interact when creating a new variant,
-      // we can't immediately redirect a user to the new variant as GraphQL is too quick
+      // Because of the way GraphQL and meteor interact when creating a new entry,
+      // we can't immediately redirect a user to the new entry as GraphQL is too quick
       // and the meteor subscription isn't yet updated. Once this page has been updated
-      // to use GraphQL for data fetching, add a redirect to the new variant when it's created
-      enqueueSnackbar(i18next.t("productDetailEdit.addVariant"), { variant: "success" });
+      // to use GraphQL for data fetching, add a redirect to the new entry when it's created
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.addEntry"), { entry: "success" });
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.addVariantFail"), { variant: "error" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.addEntryFail"), { entry: "error" });
     }
-  }, [createProductVariant, enqueueSnackbar, history, product, refetchProduct, shopId]);
+  }, [createWishlistEntry, enqueueSnackbar, history, wishlist, refetchWishlist, shopId]);
 
-  const onToggleProductVisibility = useCallback(async () => {
+  const onToggleWishlistVisibility = useCallback(async () => {
     try {
-      await updateProduct({
+      await updateWishlist({
         variables: {
           input: {
-            productId: product._id,
+            wishlistId: wishlist._id,
             shopId,
-            product: {
-              isVisible: !product.isVisible
+            wishlist: {
+              isVisible: !wishlist.isVisible
             }
           }
         }
       });
 
-      enqueueSnackbar(i18next.t("productDetailEdit.updateProductFieldSuccess"), { variant: "success" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.updateWishlistFieldSuccess"), { entry: "success" });
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.updateProductFieldFail"), { variant: "error" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.updateWishlistFieldFail"), { entry: "error" });
     }
   }, [
     enqueueSnackbar,
-    product,
+    wishlist,
     shopId,
-    updateProduct
+    updateWishlist
   ]);
 
   /**
-   * @method onUpdateProduct
+   * @method onUpdateWishlist
    * @param {Object} args
-   * @param {Object} args.product Product fields to update
-   * @param {Object} [args.productId] Product ID to update. Leave blank for current product.
-   * @param {Object} [args.shopId] Shop ID of the product to update. Leave blank for current shop.
+   * @param {Object} args.wishlist Wishlist fields to update
+   * @param {Object} [args.wishlistId] Wishlist ID to update. Leave blank for current wishlist.
+   * @param {Object} [args.shopId] Shop ID of the wishlist to update. Leave blank for current shop.
    */
-  const onUpdateProduct = useCallback(async ({
-    product: productLocal,
-    productId: productIdLocal = product._id,
-    shopId: shopIdLocal = shopId
+  const onUpdateWishlist = useCallback(async ({
+    wishlist: wishlistLocal,
+    wishlistId: wishlistIdLocal = wishlist._id,
   }) => {
     try {
-      await updateProduct({
+      await updateWishlist({
         variables: {
           input: {
-            productId: productIdLocal,
-            shopId: shopIdLocal,
-            product: productLocal
+            wishlistId: wishlistIdLocal,
+            wishlist: wishlistLocal
           }
         }
       });
 
-      enqueueSnackbar(i18next.t("productDetailEdit.updateProductFieldSuccess"), { variant: "success" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.updateWishlistFieldSuccess"), { entry: "success" });
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.updateProductFieldFail"), { variant: "error" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.updateWishlistFieldFail"), { entry: "error" });
     }
   }, [
     enqueueSnackbar,
-    product,
-    shopId,
-    updateProduct
+    wishlist,
+    updateWishlist
   ]);
 
-  const handleDeleteProductTag = useCallback(async ({
-    tag: tagLocal,
-    product: productLocal = product,
-    productId: productIdLocal = product._id,
+
+  const onUpdateWishlistEntry = useCallback(async ({
+    entry: entryLocal,
+    entryId: entryIdLocal,
     shopId: shopIdLocal = shopId
   }) => {
-    const filteredTagIds = productLocal.tags.nodes
-      .filter(({ _id }) => _id !== tagLocal._id)
-      .map(({ _id }) => _id);
-
     try {
-      await updateProduct({
+      await updateWishlistEntry({
         variables: {
           input: {
-            productId: productIdLocal,
             shopId: shopIdLocal,
-            product: {
-              tagIds: filteredTagIds
+            entry: entryLocal,
+            entryId: entryIdLocal
+          }
+        }
+      });
+
+      enqueueSnackbar(i18next.t("WishlistEntry.updateEntriesuccess"), { entry: "success" });
+    } catch (error) {
+      enqueueSnackbar(i18next.t("WishlistEntry.updateEntryFail"), { entry: "error" });
+    }
+  }, [enqueueSnackbar, shopId, updateWishlistEntry]);
+
+  // const onUpdateWishlistEntryPrices = useCallback(async ({
+  //   entryPrices: entryPricesLocal,
+  //   entryId: entryIdLocal,
+  //   shopId: shopIdLocal = shopId
+  // }) => {
+  //   const { price, compareAtPrice } = entryPricesLocal;
+  //   try {
+  //     await updateWishlistEntryPrices({
+  //       variables: {
+  //         input: {
+  //           shopId: shopIdLocal,
+  //           prices: {
+  //             price,
+  //             compareAtPrice: compareAtPrice.amount
+  //           },
+  //           entryId: entryIdLocal
+  //         }
+  //       }
+  //     });
+
+  //     enqueueSnackbar(i18next.t("WishlistEntry.updateEntryPricesSuccess"), { entry: "success" });
+  //   } catch (error) {
+  //     enqueueSnackbar(i18next.t("WishlistEntry.updateEntryPricesFail"), { entry: "error" });
+  //   }
+  // }, [enqueueSnackbar, shopId, updateWishlistEntryPrices]);
+
+  const onToggleEntryVisibility = useCallback(async ({
+    entry: entryLocal,
+    shopId: shopIdLocal = shopId
+  }) => {
+    try {
+      await updateWishlistEntry({
+        variables: {
+          input: {
+            entryId: entryLocal._id,
+            shopId: shopIdLocal,
+            entry: {
+              isVisible: !entryLocal.isVisible
             }
           }
         }
       });
 
-      enqueueSnackbar(i18next.t("productDetailEdit.removeProductTagSuccess"), { variant: "success" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.updateWishlistFieldSuccess"), { entry: "success" });
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.removeProductTagFail"), { variant: "error" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.updateWishlistFieldFail"), { entry: "error" });
     }
-  }, [
-    enqueueSnackbar,
-    product,
-    shopId,
-    updateProduct
-  ]);
+  }, [enqueueSnackbar, shopId, updateWishlistEntry]);
 
-
-  const onUpdateProductVariant = useCallback(async ({
-    variant: variantLocal,
-    variantId: variantIdLocal,
-    shopId: shopIdLocal = shopId
-  }) => {
-    try {
-      await updateProductVariant({
-        variables: {
-          input: {
-            shopId: shopIdLocal,
-            variant: variantLocal,
-            variantId: variantIdLocal
-          }
-        }
-      });
-
-      enqueueSnackbar(i18next.t("productVariant.updateVariantSuccess"), { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(i18next.t("productVariant.updateVariantFail"), { variant: "error" });
-    }
-  }, [enqueueSnackbar, shopId, updateProductVariant]);
-
-  const onUpdateProductVariantPrices = useCallback(async ({
-    variantPrices: variantPricesLocal,
-    variantId: variantIdLocal,
-    shopId: shopIdLocal = shopId
-  }) => {
-    const { price, compareAtPrice } = variantPricesLocal;
-    try {
-      await updateProductVariantPrices({
-        variables: {
-          input: {
-            shopId: shopIdLocal,
-            prices: {
-              price,
-              compareAtPrice: compareAtPrice.amount
-            },
-            variantId: variantIdLocal
-          }
-        }
-      });
-
-      enqueueSnackbar(i18next.t("productVariant.updateVariantPricesSuccess"), { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(i18next.t("productVariant.updateVariantPricesFail"), { variant: "error" });
-    }
-  }, [enqueueSnackbar, shopId, updateProductVariantPrices]);
-
-  const onToggleVariantVisibility = useCallback(async ({
-    variant: variantLocal,
-    shopId: shopIdLocal = shopId
-  }) => {
-    try {
-      await updateProductVariant({
-        variables: {
-          input: {
-            variantId: variantLocal._id,
-            shopId: shopIdLocal,
-            variant: {
-              isVisible: !variantLocal.isVisible
-            }
-          }
-        }
-      });
-
-      enqueueSnackbar(i18next.t("productDetailEdit.updateProductFieldSuccess"), { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.updateProductFieldFail"), { variant: "error" });
-    }
-  }, [enqueueSnackbar, shopId, updateProductVariant]);
-
-  const onCloneProductVariants = useCallback(async ({
-    variantIds: variantIdsLocal,
-    shopId: shopIdLocal = shopId
-  }) => {
-    try {
-      await cloneProductVariants({
-        variables: {
-          input: {
-            shopId: shopIdLocal,
-            variantIds: variantIdsLocal
-          }
-        }
-      });
-
-      // Refetch product data when we adda new variant
-      refetchProduct();
-
-      enqueueSnackbar(i18next.t("productDetailEdit.cloneProductSuccess"), { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.cloneProductFail"), { variant: "error" });
-    }
-  }, [cloneProductVariants, enqueueSnackbar, refetchProduct, shopId]);
-
-  const onArchiveProductVariants = useCallback(async ({
-    variantIds: variantIdsLocal,
+  const onArchiveWishlistEntries = useCallback(async ({
+    entryIds: entryIdsLocal,
     shopId: shopIdLocal = shopId,
     redirectOnArchive = false
   }) => {
     try {
-      await archiveProductVariants({
+      await archiveWishlistEntries({
         variables: {
           input: {
             shopId: shopIdLocal,
-            variantIds: variantIdsLocal
+            entryIds: entryIdsLocal
           }
         }
       });
@@ -373,54 +288,50 @@ function useProduct(args = {}) {
         let redirectUrl;
 
         if (option) {
-          redirectUrl = `/products/${product._id}/${variant._id}`;
+          redirectUrl = `/wishlists/${wishlist._id}/${entry._id}`;
         } else {
-          redirectUrl = `/products/${product._id}`;
+          redirectUrl = `/wishlists/${wishlist._id}`;
         }
 
         history.push(redirectUrl);
       }
 
-      // Refetch product data when we adda new variant
-      refetchProduct();
+      // Refetch wishlist data when we adda new entry
+      refetchWishlist();
 
-      enqueueSnackbar(i18next.t("productDetailEdit.archiveProductVariantsSuccess"), { variant: "success" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.archiveWishlistEntriesSuccess"), { entry: "success" });
     } catch (error) {
-      enqueueSnackbar(i18next.t("productDetailEdit.archiveProductVariantsFail"), { variant: "error" });
+      enqueueSnackbar(i18next.t("wishlistDetailEdit.archiveWishlistEntriesFail"), { entry: "error" });
     }
-  }, [archiveProductVariants, enqueueSnackbar, history, option, product, refetchProduct, shopId, variant]);
+  }, [archiveWishlistEntries, enqueueSnackbar, history, option, wishlist, refetchWishlist, shopId, entry]);
 
   // Convert the social metadata to a format better suited for forms
-  if (product && Array.isArray(product.socialMetadata)) {
-    product.socialMetadata.forEach(({ service, message }) => {
-      product[`${service}Msg`] = message;
+  if (wishlist && Array.isArray(wishlist.socialMetadata)) {
+    wishlist.socialMetadata.forEach(({ service, message }) => {
+      wishlist[`${service}Msg`] = message;
     });
   }
 
   return {
-    currentVariant: option || variant,
+    currentEntry: option || entry,
     newMetaField,
     isLoading,
-    handleDeleteProductTag,
-    onArchiveProduct,
-    onArchiveProductVariants,
-    onCloneProduct,
-    onCloneProductVariants,
-    onCreateVariant,
-    onPublishProduct,
-    onUpdateProduct,
-    onUpdateProductVariantPrices,
+    onArchiveWishlist,
+    onArchiveWishlistEntries,
+    onCloneWishlist,
+    onCreateEntry,
+    onUpdateWishlist,
     option,
-    onRestoreProduct: handleProductRestore,
-    onToggleProductVisibility,
-    onToggleVariantVisibility,
-    onUpdateProductVariant,
-    product: productQueryResult && productQueryResult.product,
-    refetchProduct,
+    onRestoreWishlist: handleWishlistRestore,
+    onToggleWishlistVisibility,
+    onToggleEntryVisibility,
+    onUpdateWishlistEntry,
+    wishlist: wishlistQueryResult && wishlistQueryResult.wishlist,
+    refetchWishlist,
     setNewMetaField,
     shopId,
-    variant
+    entry
   };
 }
 
-export default useProduct;
+export default useWishlist;

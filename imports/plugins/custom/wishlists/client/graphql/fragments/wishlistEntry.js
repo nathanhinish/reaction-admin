@@ -6,6 +6,7 @@ export default gql`
     product {
       _id
     }
+    isArchived
   }
 `;
 

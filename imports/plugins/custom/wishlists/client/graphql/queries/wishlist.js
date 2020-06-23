@@ -1,11 +1,11 @@
 import gql from "graphql-tag";
-import Product from "../fragments/productWithVariants";
+import Wishlist from "../fragments/wishlistWithEntries";
 
 export default gql`
-  query product($productId: ID!, $shopId: ID!) {
-    product(productId: $productId, shopId: $shopId) {
-      ...Product
+  query wishlist($wishlistId: ID!) {
+    wishlist(wishlistId: $wishlistId) {
+      ...Wishlist
     }
   }
-  ${Product}
+  ${Wishlist}
 `;
