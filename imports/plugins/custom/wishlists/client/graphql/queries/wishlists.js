@@ -6,11 +6,6 @@ export default gql`
       nodes {
         _id
         name
-        account {
-          _id
-          firstName
-          lastName
-        }
         createdAt
       }
       pageInfo {

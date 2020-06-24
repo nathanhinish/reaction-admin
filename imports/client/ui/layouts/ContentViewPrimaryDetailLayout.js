@@ -86,6 +86,7 @@ function ContentViewPrimaryDetailLayout(props) {
     detailBlockRegionName,
     drawerButtonTitle,
     primaryBlockRegionName,
+    hideSidebar,
     ...blockProps
   } = props;
 
@@ -146,7 +147,7 @@ function ContentViewPrimaryDetailLayout(props) {
         </>
       }
       <Box display="flex">
-        {!isMobile &&
+        {!isMobile && !hideSidebar &&
           <div className={classes.sidebar}>
             {PrimaryComponent || <Blocks region={primaryBlockRegionName} blockProps={blockProps} />}
           </div>
@@ -169,11 +170,13 @@ ContentViewPrimaryDetailLayout.propTypes = {
   detailBlockRegionName: PropTypes.string,
   drawerButtonTitle: PropTypes.string,
   isMobile: PropTypes.bool,
-  primaryBlockRegionName: PropTypes.string
+  primaryBlockRegionName: PropTypes.string,
+  hideSidebar: PropTypes.bool,
 };
 
 ContentViewPrimaryDetailLayout.defaultProps = {
-  drawerButtonTitle: "More"
+  drawerButtonTitle: "More",
+  hideSidebar: false
 };
 
 export default ContentViewPrimaryDetailLayout;

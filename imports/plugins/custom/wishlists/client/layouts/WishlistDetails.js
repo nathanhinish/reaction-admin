@@ -42,6 +42,7 @@ function WishlistDetail(props) {
 
   return (
     <ContentViewPrimaryDetailLayout
+      hideSidebar
       AppBarComponent={<WishlistToolbar />}
       PrimaryComponent={
         <React.Fragment>
